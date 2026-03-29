@@ -99,8 +99,8 @@ def train():
  
     # ===== 超参数 =====
     batch_size  = 8
-    lr          = 3e-4
-    epochs      = 5
+    lr          = 5e-5
+    epochs      = 8
     max_length  = 256
     num_classes = 20
  
