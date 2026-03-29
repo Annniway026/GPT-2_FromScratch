@@ -28,7 +28,7 @@ class NewsDataset(Dataset):
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
                 obj = json.loads(line)
-                input_ids = obj["input_ids"]
+                input_ids = obj["token_ids"]
                 label = obj["label"]
  
                 # 截断
