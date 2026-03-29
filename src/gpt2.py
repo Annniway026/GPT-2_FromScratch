@@ -222,7 +222,7 @@ class GPT2LMHeadModel(nn.Module):
         B, T = input_ids.shape
 
         # Offset positions by the length already in the KV cache
-        past_len = past_key_values[0][0].shape[2] if past_key_values else 0
+        past_len = past_key_values[0][0].shape[2] if (past_key_values and past_key_values[0] is not None) else 0
         positions = torch.arange(past_len, past_len + T, device=input_ids.device)
 
         x = self.wte(input_ids) + self.wpe(positions)
