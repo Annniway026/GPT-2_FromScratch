@@ -281,8 +281,10 @@ class GPT2LMHeadModel(nn.Module):
 
             # Mask tokens whose cumulative probability exceeds top_p,
             # keeping at least the top token (shift mask right by one)
-            mask = (cumulative - sorted_probs) > top_p
+            mask = cumulative > top_p
+            mask[:, 0] = False  # always keep the top token
             sorted_probs[mask] = 0.0
+            
 
             # Scatter filtered probs back to original vocabulary order
             probs = torch.zeros_like(probs).scatter(1, sorted_idx, sorted_probs)
