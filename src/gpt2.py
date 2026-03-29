@@ -294,14 +294,12 @@ class GPT2LMHeadModel(nn.Module):
         # We populate it with None so forward() knows how many layers to expect
         past_key_values = [None] * len(self.h)
 
-        # Prefill: process the entire prompt. 
-        # Note: We pass the list, and forward() will fill it in-place.
-        output = self.forward(input_ids, past_key_values=past_key_values)
-        next_token_logits = output.logits[:, -1, :]
 
         # Prefill: process the entire prompt and build the initial KV cache
-        output, past_key_values = self.forward(input_ids, past_key_values=None)
-        next_token_logits = output.logits[:, -1, :]         # [B, vocab]
+        past_key_values = [None] * len(self.h)
+        output = self.forward(input_ids, past_key_values=past_key_values)
+        next_token_logits = output.logits[:, -1, :]   # [B, vocab]
+     
         
         # Autoregressive decode
         for _ in range(max_new_tokens):
