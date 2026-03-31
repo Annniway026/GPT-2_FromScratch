@@ -187,6 +187,13 @@ def train():
         # ===== save the best model =====
         if val_acc > best_acc:
             best_acc = val_acc
+            # save to local 
+            os.makedirs("checkpoints", exist_ok=True)
+            local_path = "checkpoints/classifier_model.pth"
+            torch.save(model.state_dict(), local_path)
+            print(f"  -> Saved to {local_path} (acc={best_acc:.4f})")
+
+            # also save to google drive
             os.makedirs("/content/drive/MyDrive/checkpoints", exist_ok=True)
             save_path = "/content/drive/MyDrive/checkpoints/classifier_model.pth"
             torch.save(model.state_dict(), save_path)
