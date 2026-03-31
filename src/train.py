@@ -54,7 +54,7 @@ def collate_fn(batch):
     for item in batch:
         ids = item["input_ids"]
         pad_len = max_len - len(ids)
-        input_ids.append([0] * pad_len + ids)
+        input_ids.append(ids + [0] * pad_len) # right padding
         labels.append(item["label"])
 
     return {
@@ -97,7 +97,7 @@ def train():
     # ===== hyperparameters =====
     batch_size  = 8
     lr          = 5e-5
-    epochs      = 8
+    epochs      = 4
     max_length  = 256
     num_classes = 20
  

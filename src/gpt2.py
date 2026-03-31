@@ -284,7 +284,7 @@ class GPT2LMHeadModel(nn.Module):
             mask = cumulative > top_p
             mask[:, 0] = False  # always keep the top token
             sorted_probs[mask] = 0.0
-            
+
 
             # Scatter filtered probs back to original vocabulary order
             probs = torch.zeros_like(probs).scatter(1, sorted_idx, sorted_probs)
@@ -386,11 +386,15 @@ class GPT2ForSequenceClassification(nn.Module):
         # and the logits contain the classification scores for each label class.
         
         # Extract hidden states from the backbone [B, T, d_model]
-        hidden = self.transformer.get_hidden_states(input_ids)
+        hidden = self.transformer.get_hidden_states(input_ids)  # [B, T, d_model]
 
-        # Use the last token's representation as the sequence-level feature
-        cls_hidden = hidden[:, -1, :]           # [B, d_model]
+        sequence_lengths = (input_ids != 0).sum(dim=1) - 1 
+
+        batch_size = input_ids.shape[0]
+        cls_hidden = hidden[torch.arange(batch_size), sequence_lengths]  # [B, d_model]
+
 
         logits = self.classifier(cls_hidden)    # [B, num_labels]
         
         return SequenceClassifierOutput(logits=logits)
+    
