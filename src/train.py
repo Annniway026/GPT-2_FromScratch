@@ -129,7 +129,7 @@ def train():
     backbone_params   = list(model.transformer.parameters())
     classifier_params = list(model.classifier.parameters())
     optimizer = torch.optim.AdamW([
-        {"params": backbone_params,   "lr": lr * 0.1},   # backbone 用更小的 lr
+        {"params": backbone_params,   "lr": lr * 0.1},   # smaller backbone lr
         {"params": classifier_params, "lr": lr},
     ])
 
@@ -145,7 +145,7 @@ def train():
     criterion = nn.CrossEntropyLoss()
  
     # ===== TensorBoard =====
-    writer = SummaryWriter(log_dir="runs/gpt2_classifier")
+    writer = SummaryWriter(log_dir="/content/drive/MyDrive/runs/gpt2_classifier") # save to drive
  
     global_step = 0
     best_acc    = 0.0
@@ -160,7 +160,6 @@ def train():
             input_ids = batch["input_ids"].to(device)
             labels    = batch["labels"].to(device)
  
-            # forward() return SequenceClassifierOutput
             output = model(input_ids)
             logits = output.logits      # (B, num_classes)
  
@@ -168,7 +167,7 @@ def train():
  
             optimizer.zero_grad()
             loss.backward()
-            # gradient clipping，防止梯度爆炸
+            # gradient clipping to prevent exploding gradients
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             scheduler.step() 
@@ -188,8 +187,8 @@ def train():
         # ===== save the best model =====
         if val_acc > best_acc:
             best_acc = val_acc
-            os.makedirs("checkpoints", exist_ok=True)
-            save_path = "checkpoints/classifier_model.pth"
+            os.makedirs("/content/drive/MyDrive/checkpoints", exist_ok=True)
+            save_path = "/content/drive/MyDrive/checkpoints/classifier_model.pth"
             torch.save(model.state_dict(), save_path)
             print(f"  -> Saved best model to {save_path}  (acc={best_acc:.4f})")
  
@@ -205,10 +204,11 @@ def load_and_test():
     config = GPT2Config(num_labels=20)
     model  = GPT2ForSequenceClassification(
         config=config,
-        classifier_bin_path="checkpoints/classifier_model.pth" 
+        classifier_bin_path="/content/drive/MyDrive/checkpoints/classifier_model.pth"
     ).to(device)
+    model.eval() 
     print("Checkpoint loaded successfully.")
- 
+
  
 if __name__ == "__main__":
     # TODO: implement the training loop for GPT2ForSequenceClassification on the 20 Newsgroups dataset.
