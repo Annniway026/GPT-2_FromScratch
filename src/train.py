@@ -48,21 +48,18 @@ class NewsDataset(Dataset):
  
 def collate_fn(batch):
     max_len = max(len(x["input_ids"]) for x in batch)
- 
     input_ids = []
     labels = []
- 
+
     for item in batch:
         ids = item["input_ids"]
         pad_len = max_len - len(ids)
-        # 左 padding：让最后一个 token 始终是真实 token，
-        # 这样 GPT2 用 last-token pooling 时取到的是有意义的位置
         input_ids.append([0] * pad_len + ids)
         labels.append(item["label"])
- 
+
     return {
-        "input_ids": torch.tensor(input_ids, dtype=torch.long),
-        "labels":    torch.tensor(labels,    dtype=torch.long),
+        "input_ids":      torch.tensor(input_ids,      dtype=torch.long),
+        "labels":         torch.tensor(labels,          dtype=torch.long),
     }
  
  
@@ -97,14 +94,14 @@ def evaluate(model, dataloader, device):
 def train():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
  
-    # ===== 超参数 =====
+    # ===== hyperparameters =====
     batch_size  = 8
     lr          = 5e-5
     epochs      = 8
     max_length  = 256
     num_classes = 20
  
-    # ===== 数据 =====
+    # ===== datasets =====
     train_dataset = NewsDataset("data/20_newsgroups_train.jsonl", max_length)
     val_dataset   = NewsDataset("data/20_newsgroups_val.jsonl",   max_length)
  
@@ -121,19 +118,31 @@ def train():
         collate_fn=collate_fn
     )
  
-    # ===== 模型 =====
+    # ===== model =====
     config = GPT2Config(num_labels=num_classes)
-    model  = GPT2ForSequenceClassification(config=config).to(device)
+    model  = GPT2ForSequenceClassification(
+        config=config,
+        lm_bin_path="checkpoints/gpt2_model.pth" 
+    ).to(device)
  
-    # ===== 优化器 =====
-    # 对 backbone 和 classifier head 使用不同学习率
+    # ===== optimizer =====
+    # setting up different lr for backbone and classifier head
     backbone_params   = list(model.transformer.parameters())
     classifier_params = list(model.classifier.parameters())
     optimizer = torch.optim.AdamW([
         {"params": backbone_params,   "lr": lr * 0.1},   # backbone 用更小的 lr
         {"params": classifier_params, "lr": lr},
     ])
- 
+
+    total_steps  = len(train_loader) * epochs
+    warmup_steps = total_steps // 10
+
+    def lr_lambda(step):
+        if step < warmup_steps:
+            return step / warmup_steps
+        return max(0.0, (total_steps - step) / (total_steps - warmup_steps))
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
     criterion = nn.CrossEntropyLoss()
  
     # ===== TensorBoard =====
@@ -163,6 +172,7 @@ def train():
             # gradient clipping，防止梯度爆炸
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            scheduler.step() 
  
             writer.add_scalar("train/loss", loss.item(), global_step)
  
@@ -171,7 +181,7 @@ def train():
  
             global_step += 1
  
-        # ===== 验证 =====
+        # ===== validation =====
         val_acc = evaluate(model, val_loader, device)
         writer.add_scalar("val/accuracy", val_acc, epoch)
         print(f"[Epoch {epoch}] Validation Accuracy: {val_acc:.4f}")
@@ -193,13 +203,11 @@ def train():
 # =========================
 def load_and_test():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
- 
     config = GPT2Config(num_labels=20)
-    model  = GPT2ForSequenceClassification(config=config).to(device)
- 
-    ckpt_path = "checkpoints/classifier_model.pth"
-    model.load_state_dict(torch.load(ckpt_path, map_location=device))
-    model.eval()
+    model  = GPT2ForSequenceClassification(
+        config=config,
+        classifier_bin_path="checkpoints/classifier_model.pth" 
+    ).to(device)
     print("Checkpoint loaded successfully.")
  
  
