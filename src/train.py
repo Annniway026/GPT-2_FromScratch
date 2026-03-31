@@ -32,7 +32,7 @@ class NewsDataset(Dataset):
                 input_ids = obj["token_ids"]
                 label = obj["label"]
  
-                # 截断
+                # truncate
                 input_ids = input_ids[:max_length]
                 self.samples.append({
                     "input_ids": input_ids,
@@ -76,8 +76,7 @@ def evaluate(model, dataloader, device):
     for batch in dataloader:
         input_ids = batch["input_ids"].to(device)
         labels    = batch["labels"].to(device)
- 
-        # forward() 返回 SequenceClassifierOutput，取 .logits
+
         output = model(input_ids)
         logits = output.logits          # (B, num_classes)
         preds  = logits.argmax(dim=-1)
@@ -161,7 +160,7 @@ def train():
             input_ids = batch["input_ids"].to(device)
             labels    = batch["labels"].to(device)
  
-            # forward() 返回 SequenceClassifierOutput
+            # forward() return SequenceClassifierOutput
             output = model(input_ids)
             logits = output.logits      # (B, num_classes)
  
@@ -186,7 +185,7 @@ def train():
         writer.add_scalar("val/accuracy", val_acc, epoch)
         print(f"[Epoch {epoch}] Validation Accuracy: {val_acc:.4f}")
  
-        # ===== 保存最优模型 =====
+        # ===== save the best model =====
         if val_acc > best_acc:
             best_acc = val_acc
             os.makedirs("checkpoints", exist_ok=True)
